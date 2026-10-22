@@ -3,3 +3,9 @@
 ### System info
 GET {{baseUrl}}/api/v1/system/info
 Accept: application/json
+
+### Liveness
+GET {{baseUrl}}/health/live
+
+### Readiness
+GET {{baseUrl}}/health/ready

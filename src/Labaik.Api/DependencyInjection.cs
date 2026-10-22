@@ -1,6 +1,14 @@
+using System.Diagnostics;
+using Labaik.Api.Common;
+using Labaik.Api.Common.ErrorHandling;
 using Labaik.Api.Endpoints;
+using Labaik.Api.Endpoints.Diagnostics;
 using Labaik.Api.Options;
 using Microsoft.Extensions.Options;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
@@ -8,7 +16,7 @@ using Serilog.Formatting.Compact;
 
 namespace Labaik.Api;
 
-/// <summary>Registers and wires the HTTP layer.</summary>
+/// <summary>Registers and wires the HTTP layer: logging, options, error handling, OpenAPI, health and telemetry.</summary>
 internal static class DependencyInjection
 {
     public static IServiceCollection AddPresentation(this IServiceCollection services, IConfiguration configuration)
@@ -25,6 +33,11 @@ internal static class DependencyInjection
             .AddOptions<OpenApiDocsOptions>()
             .BindConfiguration(OpenApiDocsOptions.SectionName);
 
+        services.AddSerilog(ConfigureSerilog);
+
+        services.AddProblemDetails(options => options.CustomizeProblemDetails = EnrichProblemDetails);
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+
         services.AddOpenApi(OpenApiDocsOptions.DocumentName, options => options.AddDocumentTransformer((document, _, _) =>
         {
             document.Info ??= new();
@@ -34,13 +47,17 @@ internal static class DependencyInjection
             return Task.CompletedTask;
         }));
 
-        services.AddSerilog(ConfigureSerilog);
+        services.AddHealthChecks();
+
+        AddTelemetry(services, configuration);
 
         return services;
     }
 
     public static WebApplication UsePresentation(this WebApplication app)
     {
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
         app.UseSerilogRequestLogging(options => options.GetLevel = GetRequestLogLevel);
 
         if (app.Services.GetRequiredService<IOptions<OpenApiDocsOptions>>().Value.Enabled)
@@ -49,6 +66,7 @@ internal static class DependencyInjection
             app.MapScalarApiReference(options => options.WithTitle("Labaik API"));
         }
 
+        app.MapHealthEndpoints();
         app.MapApiV1();
 
         return app;
@@ -78,6 +96,32 @@ internal static class DependencyInjection
         if (!string.IsNullOrWhiteSpace(seq.ServerUrl))
         {
             logger.WriteTo.Seq(seq.ServerUrl);
+        }
+    }
+
+    private static void EnrichProblemDetails(ProblemDetailsContext context)
+    {
+        var request = context.HttpContext.Request;
+
+        context.ProblemDetails.Instance = $"{request.Method} {request.Path}";
+        context.ProblemDetails.Extensions["traceId"] = Activity.Current?.TraceId.ToString() ?? context.HttpContext.TraceIdentifier;
+    }
+
+    private static void AddTelemetry(IServiceCollection services, IConfiguration configuration)
+    {
+        var openTelemetry = services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService(serviceName: "labaik-api", serviceVersion: BuildInfo.Version))
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/health"))
+                .AddHttpClientInstrumentation())
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation());
+
+        if (!string.IsNullOrWhiteSpace(configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+        {
+            openTelemetry.UseOtlpExporter();
         }
     }
 
