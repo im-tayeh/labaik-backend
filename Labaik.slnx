@@ -8,6 +8,7 @@
     <File Path="BannedSymbols.txt" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+    <File Path="docker-compose.yml" />
   </Folder>
   <Project Path="src/Labaik.Api/Labaik.Api.csproj" />
   <Project Path="src/Labaik.Application/Labaik.Application.csproj" />
