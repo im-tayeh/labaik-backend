@@ -2,6 +2,9 @@
   <Folder Name="/docs/">
     <File Path="net11-migration.md" />
   </Folder>
+  <Folder Name="/http/">
+    <File Path="system.http" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
