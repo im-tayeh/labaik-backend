@@ -1,0 +1,16 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Applied to every project. Check for a newer stable version with: dotnet package search Microsoft.CodeAnalysis.BannedApiAnalyzers -->
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- "dotnet add <project> package <name>" writes PackageVersion entries here. -->
+  </ItemGroup>
+
+</Project>

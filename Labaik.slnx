@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="net11-migration.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path="BannedSymbols.txt" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="src/Labaik.Api/Labaik.Api.csproj" />
+  <Project Path="src/Labaik.Application/Labaik.Application.csproj" />
+  <Project Path="src/Labaik.Contracts/Labaik.Contracts.csproj" />
+  <Project Path="src/Labaik.Domain/Labaik.Domain.csproj" />
+  <Project Path="src/Labaik.Infrastructure/Labaik.Infrastructure.csproj" />
+</Solution>

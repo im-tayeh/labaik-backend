@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Labaik.Contracts\Labaik.Contracts.csproj" />
+    <ProjectReference Include="..\Labaik.Infrastructure\Labaik.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
