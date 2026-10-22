@@ -13,7 +13,8 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="docker-compose.yml" />
-    <File Path="Dockerfile.txt" />
+    <File Path="Dockerfile" />
+    <File Path="README.md" />
   </Folder>
   <Folder Name="/tools/">
     <File Path="generate-key.cs" />
