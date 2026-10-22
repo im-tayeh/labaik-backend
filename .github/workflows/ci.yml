@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Labaik.slnx
+
+      - name: Check formatting and code style
+        run: dotnet format Labaik.slnx --verify-no-changes --no-restore
+
+      - name: Build (warnings are errors in Release)
+        run: dotnet build Labaik.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Labaik.slnx -c Release --no-build
+
+      - name: Docker image builds
+        run: docker build -t labaik-api:ci .
+
+  api-contract:
+    name: API contract
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect breaking changes in docs/api/openapi.v1.json
+        run: |
+          if ! git show "origin/${{ github.base_ref }}:docs/api/openapi.v1.json" > base.json 2>/dev/null; then
+            echo "No contract on the base branch yet, skipping."
+            exit 0
+          fi
+          docker run --rm -v "$PWD:/w" -w /w tufin/oasdiff breaking base.json docs/api/openapi.v1.json --fail-on ERR
