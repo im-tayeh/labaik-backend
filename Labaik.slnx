@@ -6,12 +6,17 @@
     <File Path="system.http" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path="BannedSymbols.txt" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="docker-compose.yml" />
+    <File Path="Dockerfile.txt" />
+  </Folder>
+  <Folder Name="/tools/">
+    <File Path="generate-key.cs" />
   </Folder>
   <Project Path="src/Labaik.Api/Labaik.Api.csproj" />
   <Project Path="src/Labaik.Application/Labaik.Application.csproj" />
