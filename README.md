@@ -2,6 +2,9 @@
 
 Backend for Labaik, an Umrah companion app: companies, groups, supervisors, pilgrims and step-by-step rituals.
 
+- Live API: https://labaik-backend.onrender.com/api/v1/system/info
+- API reference (Scalar): https://labaik-backend.onrender.com/scalar
+
 ## Tech stack
 .NET 10, ASP.NET Core Minimal APIs, PostgreSQL 18 (from phase 1), Serilog, OpenTelemetry, Docker, Render, GitHub Actions.
 
@@ -18,13 +21,13 @@ dotnet run --project src/Labaik.Api
 - Telemetry dashboard: http://localhost:18888
 
 ## Tests
+Test projects are added in step 0.10. Run them with:
 ```bash
 dotnet test Labaik.slnx
 ```
-Contract snapshot update: run the tests with `UPDATE_OPENAPI_SNAPSHOT=1`.
 
 ## Deployment
-Push to `main` -> CI -> CD triggers the Render deploy hook and waits for `/health/live` to report the new commit.
+Merge a pull request into `main` -> CI (format, build, test, Docker build) -> CD triggers the Render deploy hook and waits until `/health/live` reports the new commit.
 
 ## Project status
 v0.1.0: walking skeleton.
