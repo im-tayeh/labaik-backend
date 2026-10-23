@@ -1,56 +1,44 @@
-name: CI
+name: CD
 
 on:
-  pull_request:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: cd-production
+  cancel-in-progress: false
 
 jobs:
-  build-test:
-    name: Build and test
+  deploy:
+    name: Deploy to Render
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - uses: actions/checkout@v5
+      - name: Trigger Render deploy for this commit
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}&ref=${SHA}"
 
-      - uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
-
-      - name: Restore
-        run: dotnet restore Labaik.slnx
-
-      - name: Check formatting and code style
-        run: dotnet format Labaik.slnx --verify-no-changes --no-restore
-
-      - name: Build (warnings are errors in Release)
-        run: dotnet build Labaik.slnx -c Release --no-restore
-
-      - name: Test
-        run: dotnet test Labaik.slnx -c Release --no-build
-
-      - name: Docker image builds
-        run: docker build -t labaik-api:ci .
-
-  api-contract:
-    name: API contract
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Detect breaking changes in docs/api/openapi.v1.json
+      - name: Wait until the new version is live
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
-          if ! git show "origin/${{ github.base_ref }}:docs/api/openapi.v1.json" > base.json 2>/dev/null; then
-            echo "No contract on the base branch yet, skipping."
-            exit 0
-          fi
-          docker run --rm -v "$PWD:/w" -w /w tufin/oasdiff breaking base.json docs/api/openapi.v1.json --fail-on ERR
+          for attempt in $(seq 1 60); do
+            body=$(curl -fsS "${API_BASE_URL}/health/live" || true)
+            if echo "$body" | grep -q "$SHA"; then
+              echo "Live: $body"
+              exit 0
+            fi
+            echo "Attempt $attempt: new version not live yet"
+            sleep 15
+          done
+          echo "New version did not go live within 15 minutes"
+          exit 1
