@@ -21,23 +21,31 @@ jobs:
     environment: production
     env:
       SHA: ${{ github.event.workflow_run.head_sha }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
     steps:
+      - name: Check deployment settings
+        run: |
+          if [ -z "${API_BASE_URL}" ]; then
+            echo "The API_BASE_URL variable is missing in the production environment."
+            exit 1
+          fi
+          echo "Deploying ${SHA} to ${API_BASE_URL}"
+
       - name: Trigger Render deploy for this commit
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}&ref=${SHA}"
 
       - name: Wait until the new version is live
-        env:
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
+          echo "Waiting for ${API_BASE_URL}/health/live to report ${SHA}"
           for attempt in $(seq 1 60); do
-            body=$(curl -fsS "${API_BASE_URL}/health/live" || true)
+            body=$(curl -sS --max-time 70 "${API_BASE_URL}/health/live" || true)
             if echo "$body" | grep -q "$SHA"; then
               echo "Live: $body"
               exit 0
             fi
-            echo "Attempt $attempt: new version not live yet"
+            echo "Attempt $attempt: ${body:-no response}"
             sleep 15
           done
           echo "New version did not go live within 15 minutes"
