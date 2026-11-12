@@ -2,7 +2,7 @@
 
 # ---------- build ----------
 # NET11: sdk:11.0
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # 1) restore layer: only project files, so code changes keep the NuGet cache
